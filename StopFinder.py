@@ -12,8 +12,8 @@ latMin = 0 #37.54635
 latMax = 0 #37.9967299
 lonMin = 0 #-122.3670799
 lonMax = 0 #-121.97602
-latDelta = 0.4503799
-lonDelta = 0.3910599
+latDelta = 0.4503799 #hardcoded because ???
+lonDelta = 0.3910599 #hardcoded because ???
 
 def findArea() :
 	db = connect()
@@ -89,6 +89,8 @@ def findNearbyDepartures() :
 	db = connect()
 	cur = db.cursor()
 	
+	findArea()
+	
 	stopId = findNearestStop()
 	
 	cur.execute("SELECT tag FROM Agency")
@@ -99,7 +101,6 @@ def findNearbyDepartures() :
 		root = ET.fromstring(response)
 		
 		if len(root.findall("./predictions")) > 0 :
-			print response
 			routes = root.findall("./predictions/direction/prediction/../..")
 			
 			for route in routes :
@@ -123,7 +124,3 @@ def deg2rad(deg) :
 
 def findUserLocation() :
 	return 37.78675510283425, -122.21046941355314
-
-findArea()
-#findNearestStop()
-findNearbyDepartures()

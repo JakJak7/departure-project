@@ -88,5 +88,3 @@ def fetchAllData() :
 	fetchAgencies()
 	fetchRoutes()
 	fetchStops()
-
-fetchAllData()
