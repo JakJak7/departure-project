@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import urllib2
 import xml.etree.ElementTree as ET
 from db import connect
@@ -7,11 +8,11 @@ url = 'http://webservices.nextbus.com/service/publicXMLFeed?'
 
 # center point: 37.78675510283425, -122.21046941355314
 
-granularity = 20.0
-latMin = 0 #37.54635
-latMax = 0 #37.9967299
-lonMin = 0 #-122.3670799
-lonMax = 0 #-121.97602
+granularity = 10.0
+latMin = 0 
+latMax = 0 
+lonMin = 0 
+lonMax = 0 
 latDelta = 0.4503799 #hardcoded because ???
 lonDelta = 0.3910599 #hardcoded because ???
 
@@ -56,11 +57,10 @@ def findPartition() :
 	
 	return newLatMin, newLatMax, newLonMin, newLonMax
 
-def findNearestStop() :
+def findNearestStop(userLat, userLon) :
 	db = connect()
 	cur = db.cursor()
 	
-	userLat, userLon = findUserLocation()
 	newLatMin, newLatMax, newLonMin, newLonMax = findPartition()
 	
 	cur.execute("SELECT * FROM Stop WHERE lat>"+ str(newLatMin) +" AND lat<"+ str(newLatMax) +" AND lon>"+ str(newLonMin) +" AND lon<"+ str(newLonMax) +";")
@@ -83,7 +83,7 @@ def findNearestStop() :
 	# find predictions for closest stop!
 	db.close()
 	
-	return stop[0][4]
+	return stop[0][4], stop[0][1]
 	
 def findNearbyDepartures() :
 	db = connect()
@@ -91,11 +91,29 @@ def findNearbyDepartures() :
 	
 	findArea()
 	
-	stopId = findNearestStop()
+	userLat, userLon = findUserLocation()
+	stopId,stopTitle = findNearestStop(userLat, userLon)
 	
 	cur.execute("SELECT tag FROM Agency")
 	agencies = cur.fetchall()
 	
+	db.close()
+	
+	print "Content-type: text/html"
+	print
+	print """
+	<html>
+	<head>
+		<title>Find departures</title>
+	</head>
+	<body>
+		Latitude: """+str(userLat)+"""</br>
+		Longitude: """+str(userLon)+"""</br>
+		</br>
+		Closest stop is """+stopTitle+""". Incoming busses:</br>
+		"""
+		
+	departureFound = False
 	for agency in agencies :
 		response = urllib2.urlopen(url + 'command=predictions&a='+agency[0]+'&stopId='+str(stopId)).read()
 		root = ET.fromstring(response)
@@ -106,9 +124,16 @@ def findNearbyDepartures() :
 			for route in routes :
 				predictions = route.findall("./direction/prediction")
 				for prediction in predictions :
-					print route.get("routeTitle") + ": " + prediction.get("minutes") + " minutes"
+					departureFound = True
+					print route.get("routeTitle") + " in " + prediction.get("minutes") + " minutes.</br>"
 	
-	db.close()
+	
+	if not departureFound :
+		print "No busses incoming."
+	print """
+	</body>
+	</html>
+	"""
 	
 def getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) :
 	R = 6371 # radius of the Earth in km
@@ -123,4 +148,6 @@ def deg2rad(deg) :
 	return deg * (math.pi/180)
 
 def findUserLocation() :
-	return 37.78675510283425, -122.21046941355314
+	return 37.78675510283425, -122.21046941355314 #Faked because a location in Europe and bus stops in North America do not combine well
+
+findNearbyDepartures()
