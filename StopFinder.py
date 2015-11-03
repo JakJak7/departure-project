@@ -8,7 +8,7 @@ url = 'http://webservices.nextbus.com/service/publicXMLFeed?'
 
 # center point: 37.78675510283425, -122.21046941355314
 
-granularity = 10.0
+granularity = 20.0
 latMin = 0 
 latMax = 0 
 lonMin = 0 
@@ -83,7 +83,7 @@ def findNearestStop(userLat, userLon) :
 	# find predictions for closest stop!
 	db.close()
 	
-	return stop[0][4], stop[0][1]
+	return stop[0][4], stop[0][1], currentBestDist
 	
 def findNearbyDepartures() :
 	db = connect()
@@ -92,7 +92,7 @@ def findNearbyDepartures() :
 	findArea()
 	
 	userLat, userLon = findUserLocation()
-	stopId,stopTitle = findNearestStop(userLat, userLon)
+	stopId,stopTitle, distance = findNearestStop(userLat, userLon)
 	
 	cur.execute("SELECT tag FROM Agency")
 	agencies = cur.fetchall()
@@ -110,7 +110,7 @@ def findNearbyDepartures() :
 		Latitude: """+str(userLat)+"""</br>
 		Longitude: """+str(userLon)+"""</br>
 		</br>
-		Closest stop is """+stopTitle+""". Incoming busses:</br>
+		Closest stop is """+stopTitle+""", """+str(round(distance*1000, 0))+"""m away. Incoming busses:</br>
 		"""
 		
 	departureFound = False
